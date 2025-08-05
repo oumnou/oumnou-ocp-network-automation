@@ -29,22 +29,28 @@ document.addEventListener('DOMContentLoaded', () => {
       return response.json();
     })
     .then(data => {
-      consoleOutput.value = '';
+  consoleOutput.value = '';
 
-      for (const [cmd, result] of Object.entries(data)) {
-        consoleOutput.value += `\n> Command: ${cmd}\n`;
-        if (result.error && result.error.trim() !== '') {
-          consoleOutput.value += `[Erreur] : ${result.error}\n`;
-        }
-        if (result.output && result.output.trim() !== '') {
-          consoleOutput.value += result.output + '\n';
-        } else {
-          consoleOutput.value += '[Aucune sortie]\n';
-        }
-      }
-      consoleOutput.scrollTop = consoleOutput.scrollHeight;
-      updateStatus('Connecté', 'Configuration récupérée');
-    })
+  if (!data.success) {
+    consoleOutput.value = `[Erreur] : ${data.error || "Erreur inconnue"}`;
+    return;
+  }
+
+  for (const [cmd, result] of Object.entries(data.results)) {
+    consoleOutput.value += `\n> Command: ${cmd}\n`;
+    if (result.error && result.error.trim() !== '') {
+      consoleOutput.value += `[Erreur] : ${result.error}\n`;
+    }
+    if (result.output && result.output.trim() !== '') {
+      consoleOutput.value += result.output + '\n';
+    } else {
+      consoleOutput.value += '[Aucune sortie]\n';
+    }
+  }
+  consoleOutput.scrollTop = consoleOutput.scrollHeight;
+  updateStatus('Connecté', 'Configuration récupérée');
+})
+
     .catch(err => {
       consoleOutput.value += `Erreur réseau : ${err}\n`;
       consoleOutput.scrollTop = consoleOutput.scrollHeight;
