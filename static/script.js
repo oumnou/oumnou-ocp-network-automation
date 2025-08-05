@@ -1,12 +1,8 @@
+document.addEventListener('DOMContentLoaded', () => {
   const consoleOutput = document.getElementById('console-output');
   const statusConnection = document.getElementById('status-connection');
   const statusAction = document.getElementById('status-action');
   const sshPassword = document.getElementById('ssh-password');
-
-  function logToConsole(message) {
-    consoleOutput.innerHTML += message + "\n";
-    consoleOutput.scrollTop = consoleOutput.scrollHeight;
-  }
 
   function updateStatus(connection, action) {
     statusConnection.textContent = 'Statut : ' + connection;
@@ -21,45 +17,41 @@
     }
 
     updateStatus('Connecté', 'Récupération Open vSwitch');
-    logToConsole('> Connexion SSH et récupération de la configuration...');
+    consoleOutput.value = '> Connexion SSH et récupération de la configuration...\n';
 
-    fetch('/api/show_ovs', {
+    fetch('/api/show_ovs_full', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: password })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
     .then(data => {
-      if (data.error) {
-        logToConsole(`Erreur : ${data.error}`);
+      consoleOutput.value = '';
+
+      for (const [cmd, result] of Object.entries(data)) {
+        consoleOutput.value += `\n> Command: ${cmd}\n`;
+        if (result.error && result.error.trim() !== '') {
+          consoleOutput.value += `[Erreur] : ${result.error}\n`;
+        }
+        if (result.output && result.output.trim() !== '') {
+          consoleOutput.value += result.output + '\n';
+        } else {
+          consoleOutput.value += '[Aucune sortie]\n';
+        }
       }
-      if (data.output) {
-        logToConsole(data.output);
-      }
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
       updateStatus('Connecté', 'Configuration récupérée');
     })
     .catch(err => {
-      logToConsole(`Erreur réseau : ${err}`);
+      consoleOutput.value += `Erreur réseau : ${err}\n`;
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
       updateStatus('Erreur', 'Connexion échouée');
     });
   });
 
+  // You can add other button listeners here too
 
-  document.getElementById('btn-generate-report').addEventListener('click', () => {
-    const ip = document.getElementById('ip-address').value || '192.168.10.1';
-    logToConsole(`> Génération du rapport pour le switch ${ip}...`);
-    updateStatus('Connecté', 'Rapport généré');
-  });
-
-  document.getElementById('btn-save-config').addEventListener('click', () => {
-    const ip = document.getElementById('ip-address').value || '192.168.10.1';
-    logToConsole(`> Sauvegarde de la configuration pour le switch ${ip}...`);
-    updateStatus('Connecté', 'Configuration sauvegardée');
-  });
-
-  document.getElementById('btn-upload-config').addEventListener('click', () => {
-    const ip = document.getElementById('ip-address').value || '192.168.10.1';
-    logToConsole(`> Chargement de la configuration vers le switch ${ip}...`);
-    updateStatus('Connecté', 'Configuration chargée');
-  });
-
+});

@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Automatisation Réseau - Interface Switch</title>
 <link rel="stylesheet" href="styles.css" />
-
 </head>
 <body>
 
@@ -19,14 +18,14 @@
 
 <div class="button-row">
   <button id="btn-show-ovs">📋 Show Open vSwitch</button>
-    <button id="btn-generate-report">📝 Générer Rapport</button>
+  <button id="btn-generate-report">📝 Générer Rapport</button>
   <button id="btn-save-config">💾 Sauvegarder Config</button>
   <button id="btn-upload-config">⬆️ Charger Config</button>
 </div>
 
-<div class="console" id="console-output">
-&gt; Prêt à exécuter des commandes sur le switch...<br/>
-</div>
+<!-- Console output is now a readonly textarea for scrolling -->
+<textarea class="console" id="console-output" readonly>&gt; Prêt à exécuter des commandes sur le switch...
+</textarea>
 
 <div class="status-bar">
   <div id="status-connection">Statut : Déconnecté</div>

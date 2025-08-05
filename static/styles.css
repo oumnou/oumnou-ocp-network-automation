@@ -17,7 +17,7 @@
   }
   input[type="text"], input[type="password"] {
     width: 10%;
-    padding: 10px;
+    padding: 7px;
     border: 2px solid #6a0dad;
     border-radius: 5px;
     margin-bottom: 20px;
@@ -47,18 +47,21 @@
   button:hover {
     background-color: #7f3fbf;
   }
-  .console {
-    background-color: #e6d9ff;
-    border-radius: 8px;
-    padding: 15px;
-    height: 280px;
-    overflow-y: auto;
-    font-family: monospace;
-    font-size: 1em;
-    line-height: 1.4;
-    white-space: pre-wrap;
-    color: #4b0082;
-  }
+ .console {
+  background-color: #e6d9ff; /* violet pâle */
+  border-radius: 8px;
+  padding: 15px;
+  height: 280px;
+  width: 80%;
+  resize: none;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.9em;
+  line-height: 1.4;
+  color: #4b0082;
+  border: 2px solid #6a0dad;
+}
+
   .status-bar {
     margin-top: 15px;
     background-color: #d1b3ff;
