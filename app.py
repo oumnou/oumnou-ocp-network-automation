@@ -6,7 +6,8 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 
 hostname = "192.168.116.134"
 username = "kali"
-key_path = os.path.expanduser("~/.ssh/id_rsa")  # Adjust as needed
+key_path = os.path.expanduser("~/.ssh/id_rsa")  # Adjust if your key is different
+
 
 def run_ovs_command(cmd, password=None):
     print(f"[DEBUG] Running command: {cmd}")
@@ -37,6 +38,7 @@ def run_ovs_command(cmd, password=None):
     ssh.close()
     return output, error
 
+
 def clean_ovs_output(raw_output: str) -> str:
     print("[DEBUG] Cleaning raw output")
     lines = raw_output.splitlines()
@@ -55,13 +57,10 @@ def clean_ovs_output(raw_output: str) -> str:
 
     def line_is_skip(line):
         stripped = line.strip()
-        # Skip shell prompt or sudo password prompt lines
         if stripped == "" or stripped == "kali" or stripped.startswith("[sudo]"):
             return True
-        # Skip UUID lines
         if len(stripped) == 36 and all(c in "0123456789abcdef-" for c in stripped.lower()):
             return True
-        # Skip empty keys from skip_keys
         if ':' in stripped:
             key, val = map(str.strip, stripped.split(':', 1))
             if key in skip_keys and val in ("[]", "{}", ""):
@@ -75,6 +74,127 @@ def clean_ovs_output(raw_output: str) -> str:
     cleaned = "\n".join(cleaned_lines)
     print(f"[DEBUG] Cleaned output:\n{cleaned}")
     return cleaned
+
+def generate_backup_commands(bridge_data, port_data, interface_data):
+    commands = []
+    
+    # Parse port blocks into dict uuid -> name
+    port_blocks = []
+    current_block = []
+    for line in port_data.splitlines():
+        if line.strip() == "":
+            if current_block:
+                port_blocks.append(current_block)
+                current_block = []
+        else:
+            current_block.append(line)
+    if current_block:
+        port_blocks.append(current_block)
+    
+    port_uuid_to_name = {}
+    for block in port_blocks:
+        port_uuid = None
+        port_name = None
+        for line in block:
+            line = line.strip()
+            if line.startswith("_uuid"):
+                port_uuid = line.split(":", 1)[1].strip()
+            elif line.startswith("name"):
+                port_name = line.split(":", 1)[1].strip().strip('"')
+        if port_uuid:
+            if port_name:
+                port_uuid_to_name[port_uuid] = port_name
+            else:
+                port_uuid_to_name[port_uuid] = None  # Unknown name
+
+    # Parse interface blocks into dict uuid -> name
+    iface_blocks = []
+    current_block = []
+    for line in interface_data.splitlines():
+        if line.strip() == "":
+            if current_block:
+                iface_blocks.append(current_block)
+                current_block = []
+        else:
+            current_block.append(line)
+    if current_block:
+        iface_blocks.append(current_block)
+    
+    iface_uuid_to_name = {}
+    for block in iface_blocks:
+        iface_uuid = None
+        iface_name = None
+        for line in block:
+            line = line.strip()
+            if line.startswith("_uuid"):
+                iface_uuid = line.split(":", 1)[1].strip()
+            elif line.startswith("name"):
+                iface_name = line.split(":", 1)[1].strip().strip('"')
+        if iface_uuid and iface_name:
+            iface_uuid_to_name[iface_uuid] = iface_name
+
+    # Parse bridges and their port UUIDs
+    bridges = {}
+    current_bridge = None
+    for line in bridge_data.splitlines():
+        line = line.strip()
+        if line.startswith("name"):
+            current_bridge = line.split(":", 1)[1].strip().strip('"')
+            bridges[current_bridge] = []
+        elif line.startswith("ports") and current_bridge:
+            ports_str = line.split(":", 1)[1].strip().strip("[]")
+            ports = [p.strip() for p in ports_str.split(",") if p.strip()]
+            bridges[current_bridge].extend(ports)
+
+    # Build commands
+    for br in bridges:
+        commands.append(f"ovs-vsctl add-br {br}")
+        for port_uuid in bridges[br]:
+            # Try port name
+            port_name = port_uuid_to_name.get(port_uuid)
+            if port_name:
+                commands.append(f"ovs-vsctl add-port {br} {port_name}")
+            else:
+                # Try interface name fallback
+                iface_name = iface_uuid_to_name.get(port_uuid)
+                if iface_name:
+                    commands.append(f"ovs-vsctl add-port {br} {iface_name}")
+                else:
+                    # Fallback to UUID itself
+                    commands.append(f"ovs-vsctl add-port {br} {port_uuid}")
+
+    # Add interface types and tags
+    for block in iface_blocks:
+        iface_name = None
+        iface_type = None
+        iface_tag = None
+        for line in block:
+            line = line.strip()
+            if line.startswith("name"):
+                iface_name = line.split(":", 1)[1].strip().strip('"')
+            elif line.startswith("type"):
+                iface_type = line.split(":", 1)[1].strip().strip('"')
+            elif line.startswith("tag"):
+                iface_tag = line.split(":", 1)[1].strip()
+        if iface_name:
+            if iface_type:
+                commands.append(f"ovs-vsctl set Interface {iface_name} type={iface_type}")
+            if iface_tag:
+                commands.append(f"ovs-vsctl set port {iface_name} tag={iface_tag}")
+
+    return "\n".join(commands)
+
+@app.route('/')
+def serve_index():
+    print("[DEBUG] Serving index.html")
+    return send_from_directory('static', 'index.html')
+
+
+@app.route('/<path:path>')
+def serve_static(path):
+    print(f"[DEBUG] Serving static file: {path}")
+    return send_from_directory('static', path)
+
 
 @app.route('/api/show_ovs_full', methods=['POST'])
 def show_ovs_full():
@@ -92,26 +212,57 @@ def show_ovs_full():
 
     results = {}
     for cmd in commands:
-        print(f"[DEBUG] Executing command: {cmd}")
         output, error = run_ovs_command(cmd, password=password)
         results[cmd] = {
             "output": clean_ovs_output(output),
             "error": error
         }
-        print(f"[DEBUG] Finished command: {cmd}")
 
-    print("[DEBUG] Returning results as JSON")
     return jsonify(results)
 
-@app.route('/')
-def serve_index():
-    print("[DEBUG] Serving index.html")
-    return send_from_directory('static', 'index.html')
 
-@app.route('/<path:path>')
-def serve_static(path):
-    print(f"[DEBUG] Serving static file: {path}")
-    return send_from_directory('static', path)
+@app.route('/api/backup_config', methods=['POST'])
+def backup_config():
+    print("[DEBUG] /api/backup_config called")
+    data = request.json or {}
+    password = data.get("password")
+
+    cmds = {
+        "bridge": "ovs-vsctl list bridge",
+        "port": "ovs-vsctl list port",
+        "interface": "ovs-vsctl list interface"
+    }
+
+    collected = {}
+    for key, cmd in cmds.items():
+        out, _ = run_ovs_command(cmd, password)
+        collected[key] = clean_ovs_output(out)
+
+    backup_text = generate_backup_commands(
+        collected["bridge"], collected["port"], collected["interface"]
+    )
+
+    backup_path = "ovs_backup.conf"
+    try:
+        with open(backup_path, "w") as f:
+            f.write(backup_text)
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+    return jsonify({
+        "status": "success",
+        "message": "Configuration sauvegardée.",
+        "backup_file": backup_path,
+        "commands": backup_text
+    })
+
+
+# Optional: allow users to download the saved config
+@app.route('/api/download_backup', methods=['GET'])
+def download_backup():
+    print("[DEBUG] /api/download_backup called")
+    return send_from_directory('.', 'ovs_backup.conf', as_attachment=True)
+
 
 if __name__ == '__main__':
     print("[DEBUG] Starting Flask app")

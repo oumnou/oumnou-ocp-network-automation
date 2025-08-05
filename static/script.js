@@ -52,6 +52,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  
+  document.getElementById('btn-backup').addEventListener('click', () => {
+  const password = sshPassword.value.trim();
+  if (!password) {
+    alert('Veuillez entrer le mot de passe SSH.');
+    return;
+  }
+
+  fetch('/api/backup_config', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: password })
+  })
+  .then(response => response.json())
+  .then(data => {
+    const file = data.file;
+    const a = document.createElement('a');
+    a.href = `/download/${file}`;
+    a.download = file;
+    a.click();
+    alert('Sauvegarde terminée !');
+  })
+  .catch(err => {
+    console.error(err);
+    alert("Erreur lors de la sauvegarde.");
+  });
+});
+
   // You can add other button listeners here too
 
 });
