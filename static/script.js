@@ -86,6 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-  // You can add other button listeners here too
 
 });
+// On page load, fetch list of backups to populate dropdown
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/list_backups')
+      .then(res => res.json())
+      .then(data => {
+        const select = document.getElementById('backup-files');
+        data.files.forEach(file => {
+          const opt = document.createElement('option');
+          opt.value = file;
+          opt.textContent = file;
+          select.appendChild(opt);
+        });
+      })
+      .catch(err => {
+        console.error('Erreur récupération fichiers backup:', err);
+      });
+  });

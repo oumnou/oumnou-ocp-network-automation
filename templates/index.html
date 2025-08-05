@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Automatisation Réseau - Interface Switch</title>
-<link rel="stylesheet" href="..\static\styles.css" />
+<link rel="stylesheet" href="../static/styles.css" />
 </head>
 <body>
 
@@ -15,6 +15,12 @@
 
 <label for="ssh-password">Mot de passe SSH :</label>
 <input type="password" id="ssh-password" placeholder="" />
+
+<label for="backup-files">Choisir une sauvegarde de configuration :</label>
+<select id="backup-files">
+  <option value="" disabled selected> -- </option>
+  <!-- Options will be dynamically populated by JS -->
+</select>
 
 <div class="button-row">
   <button id="btn-show-ovs">📋 Show Open vSwitch</button>
@@ -32,7 +38,8 @@
   <div id="status-action">Dernière action : Aucune</div>
 </div>
 
-<script src="..\static\script.js"></script>
+<script src="../static/script.js"></script>
+
 
 </body>
 </html>

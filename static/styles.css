@@ -15,6 +15,18 @@
     display: block;
     margin-bottom: 8px;
   }
+  select {
+  width: 20%;
+  padding: 10px;
+  margin-top: 5px;
+  border: 2px solid #6a0dad; /* purple border */
+  border-radius: 5px;
+      background-color: #faf5ff;
+
+  font-size: 1em;
+  box-sizing: border-box;
+}
+
   input[type="text"], input[type="password"] {
     width: 10%;
     padding: 7px;
@@ -24,6 +36,7 @@
     font-size: 1em;
     background-color: #faf5ff;
     color: #4b0082;
+    
   }
   .button-row {
     display: flex;
