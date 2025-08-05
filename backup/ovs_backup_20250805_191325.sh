@@ -1,3 +1,4 @@
+#!/bin/bash
 ovs-vsctl add-br vSwitch1
 ovs-vsctl add-port vSwitch1 port1
 ovs-vsctl add-port vSwitch1 e8cb44a8-03d6-4e8f-9634-84bf9e36fb41

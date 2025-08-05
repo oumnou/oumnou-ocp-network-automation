@@ -1,0 +1,15 @@
+from .ovs_show import register_show_routes
+from .ovs_backup import register_backup_routes
+from flask import send_from_directory
+
+def init_routes(app):
+    @app.route('/')
+    def serve_index():
+        return send_from_directory('templates', 'index.html')
+
+    @app.route('/<path:path>')
+    def serve_static(path):
+        return send_from_directory('static', path)
+
+    register_show_routes(app)
+    register_backup_routes(app)
