@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Automatisation Réseau - Interface Switch</title>
+<link rel="stylesheet" href="styles.css" />
+
+</head>
+<body>
+
+<h1>Automatisation Réseau - Maintenance Switch</h1>
+
+<label for="ip-address">Adresse IP du switch :</label>
+<input type="text" id="ip-address" placeholder="Exemple : 192.168.10.1" disabled value="192.168.116.134" />
+
+<label for="ssh-password">Mot de passe SSH :</label>
+<input type="password" id="ssh-password" placeholder="" />
+
+<div class="button-row">
+  <button id="btn-show-ovs">📋 Show Open vSwitch</button>
+    <button id="btn-generate-report">📝 Générer Rapport</button>
+  <button id="btn-save-config">💾 Sauvegarder Config</button>
+  <button id="btn-upload-config">⬆️ Charger Config</button>
+</div>
+
+<div class="console" id="console-output">
+&gt; Prêt à exécuter des commandes sur le switch...<br/>
+</div>
+
+<div class="status-bar">
+  <div id="status-connection">Statut : Déconnecté</div>
+  <div id="status-action">Dernière action : Aucune</div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
