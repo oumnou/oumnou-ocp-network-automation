@@ -5,43 +5,134 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Automatisation Réseau - Interface Switch</title>
   <link rel="stylesheet" href="../static/styles.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      background: #f9f9fb;
+      color: #222;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #5a2e8a;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 20px;
+      font-weight: 600;
+      color: #5a2e8a;
+    }
+    input[type="text"], input[type="password"], select {
+      width: 100%;
+      padding: 8px 10px;
+      margin-top: 6px;
+      border: 1.5px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:disabled {
+      background-color: #e0e0e0;
+      color: #555;
+      cursor: not-allowed;
+    }
+    input[type="text"]:focus, input[type="password"]:focus, select:focus {
+      border-color: #6b3aa9;
+      outline: none;
+    }
+    .button-row {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+    }
+    .button-row button {
+      background-color: #6b3aa9;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      flex: 1 1 180px;
+      transition: background-color 0.3s ease;
+    }
+    .button-row button:hover {
+      background-color: #571f85;
+    }
+    .console {
+      width: 100%;
+      height: 280px;
+      margin-top: 25px;
+      background-color: #1e1e2f;
+      color: #d1d1e9;
+      font-family: monospace;
+      font-size: 0.9rem;
+      padding: 12px;
+      border-radius: 6px;
+      border: none;
+      resize: none;
+      box-sizing: border-box;
+    }
+    .status-bar {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      color: #555;
+    }
+    #status-connection {
+      color: #b22222; /* red initially */
+    }
+    #status-connection.connected {
+      color: #2a9d8f; /* green when connected */
+    }
+  </style>
 </head>
 <body>
 
 <h1>Automatisation Réseau - Maintenance Switch</h1>
 
-<label for="ip-address">Adresse IP du switch :</label>
-<input type="text" id="ip-address" placeholder="Exemple : 192.168.10.1" disabled value="192.168.116.134" />
+<form id="switch-form" autocomplete="off">
 
-<label for="ssh-password">Mot de passe SSH :</label>
-<input type="password" id="ssh-password" value="kali" placeholder="" />
+  <label for="ip-address" title="Adresse IP fixe du switch, non modifiable.">Adresse IP du switch :</label>
+  <input type="text" id="ip-address" disabled value="192.168.116.134" />
 
-<label for="switch-to-backup">Nom du switch à sauvegarder :</label>
-<input type="text" id="switch-to-backup" value="vSwitchA" placeholder="Ex: vSwitchA" />
+  <label for="ssh-password" title="Mot de passe SSH pour accéder au switch.">Mot de passe SSH :</label>
+  <input type="password" id="ssh-password" value="kali" placeholder="Entrez votre mot de passe SSH" required />
 
+  <label for="switch-to-backup" title="Nom du switch que vous souhaitez sauvegarder.">Nom du switch à sauvegarder :</label>
+  <input type="text" id="switch-to-backup" value="vSwitchA" placeholder="Ex: vSwitchA" required />
 
+  <label for="new-switch-name" title="Nom du switch pour appliquer la configuration restaurée.">Nom du nouveau switch :</label>
+  <input type="text" id="new-switch-name" placeholder="Nom du switch à configurer" />
 
-<label for="new-switch-name">Nom du nouveau switch :</label>
-<input type="text" id="new-switch-name" placeholder="Nom du switch à configurer" />
+  <label for="backup-files" title="Sélectionnez un fichier de sauvegarde pour le restaurer.">Choisir une sauvegarde de configuration :</label>
+  <select id="backup-files" required>
+    <option value="" disabled selected> -- Sélectionner un fichier -- </option>
+    <!-- Options seront remplies via JS -->
+  </select>
 
-<label for="backup-files">Choisir une sauvegarde de configuration :</label>
-<select id="backup-files">
-  <option value="" disabled selected> -- </option>
-  <!-- Options will be dynamiquement peuplées via JS -->
-</select>
+  <div class="button-row">
+    <button type="button" id="btn-show-ovs" title="Afficher la configuration complète d’Open vSwitch.">📋 Show Open vSwitch</button>
+    <button type="button" id="btn-generate-report" title="Générer un rapport (fonction à implémenter).">📝 Générer Rapport</button>
+    <button type="button" id="btn-backup" title="Sauvegarder la configuration du switch sélectionné.">💾 Sauvegarder Config</button>
+    <button type="button" id="btn-upload-config" title="Charger une configuration sauvegardée sur un switch.">⬆️ Charger Config</button>
+  </div>
 
-<div class="button-row">
-  <button id="btn-show-ovs">📋 Show Open vSwitch</button>
-  <button id="btn-generate-report">📝 Générer Rapport</button>
-  <button id="btn-backup">💾 Sauvegarder Config</button>
-  <button id="btn-upload-config">⬆️ Charger Config</button>
-</div>
+</form>
 
-<!-- Console output -->
 <textarea class="console" id="console-output" readonly>&gt; Prêt à exécuter des commandes sur le switch...</textarea>
 
 <div class="status-bar">
-  <div id="status-connection">Statut : Déconnecté</div>
+  <div id="status-connection" class="disconnected">Statut : Déconnecté</div>
   <div id="status-action">Dernière action : Aucune</div>
 </div>
 
