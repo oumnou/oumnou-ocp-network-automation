@@ -1,13 +1,11 @@
 import paramiko
 import os
 
-hostname = "192.168.116.134"
-username = "kali"
 key_path = os.path.expanduser("~/.ssh/id_rsa")
 
-def run_ovs_command(cmd, password=None):
+def run_ovs_command(cmd,hostname='192.168.116.135', username='kali', password=None):
     """
-    Connects via SSH and runs a command prefixed with sudo.
+    Connects via SSH and runs a command prefixed with sudo on the given host.
     Uses private key authentication if available, otherwise password.
     Returns (stdout, stderr).
     """

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Automatisation Réseau - Interface Switch</title>
-<link rel="stylesheet" href="../static/styles.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Automatisation Réseau - Interface Switch</title>
+  <link rel="stylesheet" href="../static/styles.css" />
 </head>
 <body>
 
@@ -14,12 +14,20 @@
 <input type="text" id="ip-address" placeholder="Exemple : 192.168.10.1" disabled value="192.168.116.134" />
 
 <label for="ssh-password">Mot de passe SSH :</label>
-<input type="password" id="ssh-password" placeholder="" />
+<input type="password" id="ssh-password" value="kali" placeholder="" />
+
+<label for="switch-to-backup">Nom du switch à sauvegarder :</label>
+<input type="text" id="switch-to-backup" value="vSwitchA" placeholder="Ex: vSwitchA" />
+
+
+
+<label for="new-switch-name">Nom du nouveau switch :</label>
+<input type="text" id="new-switch-name" placeholder="Nom du switch à configurer" />
 
 <label for="backup-files">Choisir une sauvegarde de configuration :</label>
 <select id="backup-files">
   <option value="" disabled selected> -- </option>
-  <!-- Options will be dynamically populated by JS -->
+  <!-- Options will be dynamiquement peuplées via JS -->
 </select>
 
 <div class="button-row">
@@ -29,9 +37,8 @@
   <button id="btn-upload-config">⬆️ Charger Config</button>
 </div>
 
-<!-- Console output is now a readonly textarea for scrolling -->
-<textarea class="console" id="console-output" readonly>&gt; Prêt à exécuter des commandes sur le switch...
-</textarea>
+<!-- Console output -->
+<textarea class="console" id="console-output" readonly>&gt; Prêt à exécuter des commandes sur le switch...</textarea>
 
 <div class="status-bar">
   <div id="status-connection">Statut : Déconnecté</div>
@@ -39,7 +46,6 @@
 </div>
 
 <script src="../static/script.js"></script>
-
 
 </body>
 </html>
