@@ -111,8 +111,8 @@
   <label for="switch-to-backup" title="Nom du switch que vous souhaitez sauvegarder.">Nom du switch à sauvegarder :</label>
   <input type="text" id="switch-to-backup" value="vSwitchA" placeholder="Ex: vSwitchA" required />
 
-  <label for="new-switch-name" title="Nom du switch pour appliquer la configuration restaurée.">Nom du nouveau switch :</label>
-  <input type="text" id="new-switch-name" placeholder="Nom du switch à configurer" />
+  <label for="new-switch-name" title="Adresse IP du switch distant où appliquer la configuration.">Adresse IP du switch distant :</label>
+  <input type="text" id="new-switch-name" value="192.168.116.135" placeholder="Ex: 192.168.116.135" />
 
   <label for="backup-files" title="Sélectionnez un fichier de sauvegarde pour le restaurer.">Choisir une sauvegarde de configuration :</label>
   <select id="backup-files" required>
@@ -121,8 +121,8 @@
   </select>
 
   <div class="button-row">
-    <button type="button" id="btn-show-ovs" title="Afficher la configuration complète d’Open vSwitch.">📋 Show Open vSwitch</button>
-    <button type="button" id="btn-generate-report" title="Générer un rapport (fonction à implémenter).">📝 Générer Rapport</button>
+    <button type="button" id="btn-show-ovs" title="Afficher la configuration complète d'Open vSwitch.">📋 Show Open vSwitch</button>
+    <button type="button" id="btn-generate-report" title="Lister les bridges disponibles sur le switch.">🔍 Lister Bridges</button>
     <button type="button" id="btn-backup" title="Sauvegarder la configuration du switch sélectionné.">💾 Sauvegarder Config</button>
     <button type="button" id="btn-upload-config" title="Charger une configuration sauvegardée sur un switch.">⬆️ Charger Config</button>
   </div>

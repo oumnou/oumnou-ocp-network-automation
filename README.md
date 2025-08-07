@@ -24,7 +24,7 @@ L'interface offre les fonctionnalités suivantes :
    ```bash
    git clone https://github.com/oumnou/oumnou-ocp-network-automation
    cd network-automation-tool
-````
+`
 
 2. Installez les dépendances Python (Flask, PyYAML, paramiko) :
 
