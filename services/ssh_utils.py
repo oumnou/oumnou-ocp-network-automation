@@ -1,19 +1,31 @@
+# services/ssh_utils.py
+
 import paramiko
 import os
 
 key_path = os.path.expanduser("~/.ssh/id_rsa")
 
-def run_ovs_command(cmd, hostname='192.168.116.135', username='kali', password=None):
+def run_ovs_command(cmd, hostname=None, username='kali', password=None):
     """
     Connects via SSH and runs a command prefixed with sudo on the given host.
     Uses private key authentication if available, otherwise password.
     Returns (stdout, stderr).
+    
+    Args:
+        cmd (str): Command to execute
+        hostname (str): Target hostname/IP (if None, uses default)
+        username (str): SSH username
+        password (str): SSH password
     """
+    # Use provided hostname or fall back to default
+    if hostname is None:
+        hostname = '192.168.116.135'  # Default fallback
+    
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
-        if os.path.exists(key_path):
+        if os.path.exists(key_path) and password is None:
             private_key = paramiko.RSAKey.from_private_key_file(key_path)
             ssh.connect(hostname, username=username, pkey=private_key)
         else:
@@ -89,3 +101,36 @@ def clean_ovs_output(raw_output: str) -> str:
         cleaned_lines.append(line)
     
     return "\n".join(cleaned_lines)
+
+def test_connection(hostname, username='kali', password=None):
+    """
+    Test SSH connection to a host
+    Returns (success, message)
+    """
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
+    try:
+        if os.path.exists(key_path) and password is None:
+            private_key = paramiko.RSAKey.from_private_key_file(key_path)
+            ssh.connect(hostname, username=username, pkey=private_key, timeout=10)
+        else:
+            ssh.connect(hostname, username=username, password=password, timeout=10)
+        
+        # Test basic command
+        stdin, stdout, stderr = ssh.exec_command('echo "Connection test"')
+        output = stdout.read().decode().strip()
+        
+        ssh.close()
+        
+        if output == "Connection test":
+            return True, "Connection successful"
+        else:
+            return False, "Connection failed - no response"
+            
+    except paramiko.AuthenticationException:
+        return False, "Authentication failed"
+    except paramiko.SSHException as e:
+        return False, f"SSH error: {str(e)}"
+    except Exception as e:
+        return False, f"Connection error: {str(e)}"

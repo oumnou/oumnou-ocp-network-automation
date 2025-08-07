@@ -1,3 +1,5 @@
+# routes/ovs_backup.py
+
 from flask import request, jsonify
 from datetime import datetime
 import os
@@ -12,15 +14,20 @@ def register_backup_routes(app):
         data = request.json or {}
         password = data.get("password")
         switch_name = data.get("switch")
+        target_host = data.get("target_host")  # ✅ Allow specifying target host
 
         if not password:
             return jsonify({"success": False, "error": "Password is required."}), 400
         if not switch_name:
             return jsonify({"success": False, "error": "Switch name is required."}), 400
 
+        # ✅ Use current selected switch IP if available
+        from flask import g
+        hostname = target_host or getattr(g, 'current_switch_ip', None)
+
         # 🧠 Step 1: First verify the bridge exists
         bridge_check_cmd = f"ovs-vsctl br-exists {switch_name}"
-        _, check_err = run_ovs_command(bridge_check_cmd, password=password)
+        _, check_err = run_ovs_command(bridge_check_cmd, hostname=hostname, password=password)
         
         if check_err and "does not exist" in check_err.lower():
             return jsonify({
@@ -29,7 +36,7 @@ def register_backup_routes(app):
             }), 400
 
         # 🧠 Step 2: Get list of ports on the given bridge
-        raw_ports, err = run_ovs_command(f"ovs-vsctl list-ports {switch_name}", password=password)
+        raw_ports, err = run_ovs_command(f"ovs-vsctl list-ports {switch_name}", hostname=hostname, password=password)
         
         if err and ("no bridge named" in err.lower() or "does not exist" in err.lower()):
             return jsonify({
@@ -62,7 +69,7 @@ def register_backup_routes(app):
                 
             # Get interface type for the port
             iface_type_cmd = f"ovs-vsctl get Interface {port} type"
-            iface_type_raw, iface_err = run_ovs_command(iface_type_cmd, password=password)
+            iface_type_raw, iface_err = run_ovs_command(iface_type_cmd, hostname=hostname, password=password)
             
             if iface_err:
                 # If there's an error getting the type, set it as empty
@@ -78,7 +85,7 @@ def register_backup_routes(app):
 
         # 🧠 Step 4: Also get bridge information
         bridge_info_cmd = f"ovs-vsctl get Bridge {switch_name} datapath_id"
-        datapath_raw, dp_err = run_ovs_command(bridge_info_cmd, password=password)
+        datapath_raw, dp_err = run_ovs_command(bridge_info_cmd, hostname=hostname, password=password)
         
         datapath_id = ""
         if not dp_err:
@@ -88,6 +95,11 @@ def register_backup_routes(app):
 
         # 🧠 Step 5: Build YAML structure
         yaml_data = {
+            "metadata": {
+                "backup_date": datetime.now().isoformat(),
+                "source_host": hostname or "localhost",
+                "bridge_name": switch_name
+            },
             "bridges": [{
                 "name": switch_name,
                 "datapath_id": datapath_id,
@@ -101,7 +113,8 @@ def register_backup_routes(app):
             os.makedirs(BACKUP_FOLDER)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{switch_name}_backup_{timestamp}.yaml"
+        host_suffix = f"_{hostname.replace('.', '_')}" if hostname else ""
+        filename = f"{switch_name}_backup{host_suffix}_{timestamp}.yaml"
         filepath = os.path.join(BACKUP_FOLDER, filename)
 
         try:
@@ -118,5 +131,6 @@ def register_backup_routes(app):
             "message": f"Backup saved to {filename}",
             "file": filename,
             "ports_found": len(valid_ports),
-            "bridge_exists": True
+            "bridge_exists": True,
+            "source_host": hostname or "localhost"
         })
