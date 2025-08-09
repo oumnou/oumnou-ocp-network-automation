@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Automation Interface - Annotated</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .annotation {
+            position: absolute;
+            background: #ff6b6b;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .annotation::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+        }
+
+        .annotation.top::after {
+            border-top-color: #ff6b6b;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .annotation.bottom::after {
+            border-bottom-color: #ff6b6b;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .annotation.left::after {
+            border-left-color: #ff6b6b;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .annotation.right::after {
+            border-right-color: #ff6b6b;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+
+        .section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+            position: relative;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .input-group > div {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        button.secondary {
+            background: linear-gradient(135deg, #718096 0%, #2d3748 100%);
+        }
+
+        button.danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        .console {
+            width: 100%;
+            height: 200px;
+            background: #1a202c;
+            color: #e2e8f0;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            padding: 20px;
+            border-radius: 8px;
+            border: none;
+            resize: none;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #2d3748;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+        }
+
+        .hosts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .hosts-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .hosts-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .switch-candidate {
+            background: #f0fff4 !important;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-right: 5px;
+        }
+
+        .tag.ssh { background: #e6fffa; color: #00695c; }
+        .tag.web { background: #e3f2fd; color: #0277bd; }
+        .select-btn { 
+            background: #38a169; 
+            color: white; 
+            padding: 6px 12px; 
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .annotation {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .annotation:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+
+        .explanation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+        }
+
+        .explanation h3 {
+            color: #667eea;
+            margin-top: 0;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .explanation ul {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+
+        .explanation li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .explanation .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1500;
+            display: none;
+        }
+
+        .code-example {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+        }
+
+        .tip {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        .warning {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Overlay for modal -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Explanations -->
+    <div class="explanation" id="explanation-title">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>🔧 Application Title</h3>
+        <p><strong>Purpose:</strong> This is the main heading of the Network Automation application.</p>
+        <p><strong>Functionality:</strong> Combines network discovery with Open vSwitch management capabilities.</p>
+        <ul>
+            <li><strong>Scanner:</strong> Discovers network devices automatically</li>
+            <li><strong>Switch Management:</strong> Manages OVS configurations via SSH</li>
+            <li><strong>Automation:</strong> Reduces manual configuration work</li>
+        </ul>
+        <div class="tip">
+            <strong>💡 Tip:</strong> This tool is designed for network administrators who need to manage multiple Open vSwitch instances across a network infrastructure.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-scanner">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>🔍 Network Scanner Section</h3>
+        <p><strong>Purpose:</strong> Automatically discover and identify potential network switches on your network.</p>
+        <p><strong>Key Features:</strong></p>
+        <ul>
+            <li><strong>Network Discovery:</strong> Scans IP ranges to find active devices</li>
+            <li><strong>Port Analysis:</strong> Identifies open services (SSH, HTTP, SNMP)</li>
+            <li><strong>Device Classification:</strong> Categorizes devices as potential switches</li>
+            <li><strong>Switch Candidates:</strong> Highlights devices likely to be switches</li>
+        </ul>
+        <div class="tip">
+            <strong>💡 Use Case:</strong> When you need to map unknown network infrastructure or find switches that may not be documented.
+        </div>
+        <p><strong>Workflow:</strong> Enter network range → Scan → Review results → Select target switch</p>
+    </div>
+
+    <div class="explanation" id="explanation-network-range">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>🌐 Network Range Input</h3>
+        <p><strong>Purpose:</strong> Define the network subnet to scan for devices.</p>
+        <p><strong>Format:</strong> Uses CIDR notation (Classless Inter-Domain Routing)</p>
+        <div class="code-example">
+            Examples:<br>
+            • 192.168.1.0/24 (scans 192.168.1.1 to 192.168.1.254)<br>
+            • 10.0.0.0/16 (scans 10.0.0.1 to 10.0.255.254)<br>
+            • 172.16.0.0/24 (scans 172.16.0.1 to 172.16.0.254)
+        </div>
+        <p><strong>How it works:</strong></p>
+        <ul>
+            <li><strong>/24:</strong> Scans 254 possible IP addresses</li>
+            <li><strong>/16:</strong> Scans 65,534 possible IP addresses</li>
+            <li><strong>Default:</strong> 192.168.116.0/24 (lab network)</li>
+        </ul>
+        <div class="warning">
+            <strong>⚠️ Note:</strong> Larger networks (/16, /8) will take longer to scan. Start with /24 for faster results.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-scan-controls">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>⚡ Scan Control Buttons</h3>
+        <p><strong>Three scanning options with different purposes:</strong></p>
+        
+        <h4>🔍 Scanner Réseau (Network Scanner)</h4>
+        <ul>
+            <li>Comprehensive scan of specified network range</li>
+            <li>Uses nmap if available, fallback to Python ping</li>
+            <li>Identifies device types and open ports</li>
+            <li>Best for: Unknown networks, complete discovery</li>
+        </ul>
+
+        <h4>⚡ Scan Rapide (Quick Scan)</h4>
+        <ul>
+            <li>Fast scan based on selected switch IP</li>
+            <li>Automatically determines subnet (/24)</li>
+            <li>Scans around known switch location</li>
+            <li>Best for: Finding additional switches in known network</li>
+        </ul>
+
+        <h4>🗑️ Effacer Résultats (Clear Results)</h4>
+        <ul>
+            <li>Clears scan results from interface</li>
+            <li>Hides results table</li>
+            <li>Resets interface for new scan</li>
+            <li>Best for: Starting fresh or cleaning up display</li>
+        </ul>
+
+        <div class="tip">
+            <strong>💡 Strategy:</strong> Use "Network Scanner" for initial discovery, then "Quick Scan" to find additional devices in the same subnet.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-results-table">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>📊 Scan Results Table</h3>
+        <p><strong>Displays discovered devices with detailed information:</strong></p>
+        
+        <h4>Table Columns:</h4>
+        <ul>
+            <li><strong>IP:</strong> Device IP address</li>
+            <li><strong>Hostname:</strong> Resolved DNS name (if available)</li>
+            <li><strong>Ports Ouverts:</strong> Color-coded service tags</li>
+            <li><strong>Type:</strong> Identified device category</li>
+            <li><strong>Actions:</strong> "Sélectionner" button to choose device</li>
+        </ul>
+
+        <h4>Port Color Coding:</h4>
+        <div class="code-example">
+            • <span style="background: #e6fffa; color: #00695c; padding: 2px 6px; border-radius: 8px;">22</span> SSH (Teal) - Remote access<br>
+            • <span style="background: #e3f2fd; color: #0277bd; padding: 2px 6px; border-radius: 8px;">80/443</span> HTTP/HTTPS (Blue) - Web interface<br>
+            • <span style="background: #fff3e0; color: #ef6c00; padding: 2px 6px; border-radius: 8px;">161</span> SNMP (Orange) - Network monitoring
+        </div>
+
+        <h4>Switch Candidates (Green Highlight):</h4>
+        <ul>
+            <li>Devices with SSH access (port 22)</li>
+            <li>Web management interfaces (80/443)</li>
+            <li>SNMP monitoring (161)</li>
+            <li>Network management ports (830 - NETCONF)</li>
+        </ul>
+
+        <div class="tip">
+            <strong>💡 Selection:</strong> Click "Sélectionner" to automatically fill the target switch field in the management section.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-switch-mgmt">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>⚙️ Switch Management Section</h3>
+        <p><strong>Purpose:</strong> Direct interaction with selected switches for configuration management.</p>
+        
+        <h4>Core Capabilities:</h4>
+        <ul>
+            <li><strong>SSH Connectivity:</strong> Secure connection to switches</li>
+            <li><strong>OVS Commands:</strong> Execute Open vSwitch management commands</li>
+            <li><strong>Configuration Backup:</strong> Save switch configurations to files</li>
+            <li><strong>Configuration Restore:</strong> Apply saved configurations to switches</li>
+        </ul>
+
+        <h4>Prerequisites:</h4>
+        <ul>
+            <li>Target device must have SSH enabled</li>
+            <li>Open vSwitch must be installed</li>
+            <li>User must have sudo privileges</li>
+            <li>Network connectivity to target</li>
+        </ul>
+
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Always test connectivity before attempting configuration changes to avoid disrupting network services.
+        </div>
+
+        <p><strong>Typical workflow:</strong> Select switch → Test connection → View/backup config → Apply to other switches</p>
+    </div>
+
+    <div class="explanation" id="explanation-credentials">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>🔐 Target Switch & Credentials</h3>
+        <p><strong>Configuration fields for switch connection:</strong></p>
+        
+        <h4>Switch Sélectionné (Selected Switch):</h4>
+        <ul>
+            <li><strong>Purpose:</strong> IP address of target switch</li>
+            <li><strong>Input methods:</strong> Manual entry or auto-fill from scan results</li>
+            <li><strong>Format:</strong> IPv4 address (e.g., 192.168.1.100)</li>
+            <li><strong>Usage:</strong> All management operations target this IP</li>
+        </ul>
+
+        <h4>Mot de passe SSH (SSH Password):</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Authentication for SSH connections</li>
+            <li><strong>Default:</strong> "kali" (common in lab environments)</li>
+            <li><strong>Security:</strong> Transmitted securely over SSH</li>
+            <li><strong>Alternative:</strong> SSH keys can be used instead</li>
+        </ul>
+
+        <div class="code-example">
+            Connection process:<br>
+            1. SSH to switch IP<br>
+            2. Authenticate with password<br>
+            3. Execute sudo commands<br>
+            4. Return results
+        </div>
+
+        <div class="tip">
+            <strong>💡 Security:</strong> Passwords are not stored. Consider using SSH keys for production environments.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-operations">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>🛠️ Management Operations</h3>
+        <p><strong>Five key operations for switch management:</strong></p>
+        
+        <h4>🔌 Tester Connexion (Test Connection)</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Verify SSH connectivity and OVS availability</li>
+            <li><strong>Checks:</strong> Authentication, sudo access, OVS installation</li>
+            <li><strong>Use:</strong> Always run before other operations</li>
+        </ul>
+
+        <h4>📋 Show OVS</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Display complete Open vSwitch configuration</li>
+            <li><strong>Commands:</strong> ovs-vsctl show, list bridge, list port, list interface</li>
+            <li><strong>Output:</strong> Current switch topology and settings</li>
+        </ul>
+
+        <h4>🌉 Lister Bridges (List Bridges)</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Show available bridge names</li>
+            <li><strong>Use case:</strong> Find correct bridge name before backup</li>
+            <li><strong>Command:</strong> ovs-vsctl list-br</li>
+        </ul>
+
+        <h4>💾 Sauvegarder (Backup)</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Save bridge configuration to YAML file</li>
+            <li><strong>Includes:</strong> Ports, interfaces, metadata, timestamps</li>
+            <li><strong>Storage:</strong> backup/ folder with descriptive filename</li>
+        </ul>
+
+        <h4>⬆️ Charger Config (Load Config)</h4>
+        <ul>
+            <li><strong>Purpose:</strong> Apply saved configuration to switch</li>
+            <li><strong>Process:</strong> Reads YAML file, executes OVS commands</li>
+            <li><strong>Result:</strong> Recreates bridges, ports, and interfaces</li>
+        </ul>
+
+        <div class="warning">
+            <strong>⚠️ Caution:</strong> Configuration loading will modify the target switch. Always backup before making changes.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-console">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>💻 Console Output</h3>
+        <p><strong>Real-time feedback and detailed operation logs:</strong></p>
+        
+        <h4>What appears in console:</h4>
+        <ul>
+            <li><strong>Operation status:</strong> Success/error messages</li>
+            <li><strong>Command outputs:</strong> Results from OVS commands</li>
+            <li><strong>Scan results:</strong> Network discovery summaries</li>
+            <li><strong>Error details:</strong> Troubleshooting information</li>
+        </ul>
+
+        <h4>Message types:</h4>
+        <div class="code-example">
+            ✅ Success messages (green indicators)<br>
+            ❌ Error messages (red indicators)<br>
+            📊 Statistical information<br>
+            🔄 Progress indicators<br>
+            ⚡ Quick actions<br>
+            💾 File operations
+        </div>
+
+        <h4>Example outputs:</h4>
+        <div class="code-example">
+            > ✅ Network scan completed. Hosts: 5 | Switches: 2<br>
+            > 🔌 Testing connection to 192.168.1.100...<br>
+            > ✅ OVS connection successful<br>
+            > 💾 Backup completed! File: vSwitchA_backup_20241201_143022.yaml
+        </div>
+
+        <div class="tip">
+            <strong>💡 Usage:</strong> Monitor console output to track operation progress and troubleshoot issues.
+        </div>
+    </div>
+
+    <div class="explanation" id="explanation-status">
+        <button class="close-btn" onclick="closeExplanation()">×</button>
+        <h3>📊 Status Bar</h3>
+        <p><strong>Quick overview of application state and recent activity:</strong></p>
+        
+        <h4>Status Connection:</h4>
+        <ul>
+            <li><strong>Déconnecté:</strong> No active switch connection</li>
+            <li><strong>En cours:</strong> Operation in progress</li>
+            <li><strong>Connecté:</strong> Successfully connected to switch</li>
+            <li><strong>Erreur:</strong> Connection or operation failed</li>
+        </ul>
+
+        <h4>Dernière Action (Last Action):</h4>
+        <ul>
+            <li>Shows most recent operation performed</li>
+            <li>Color-coded: Green for success, Red for errors</li>
+            <li>Updates in real-time during operations</li>
+        </ul>
+
+        <h4>Status Examples:</h4>
+        <div class="code-example">
+            Statut: Connecté | Dernière action: Configuration sauvegardée<br>
+            Statut: En cours | Dernière action: Scan réseau<br>
+            Statut: Erreur | Dernière action: Connexion échouée
+        </div>
+
+        <div class="tip">
+            <strong>💡 Quick Check:</strong> Glance at the status bar to see if your last operation was successful without reading the full console output.
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Annotations -->
+        <div class="annotation top" style="top: -15px; left: 50px;" onclick="showExplanation('explanation-title')">App Title</div>
+        <div class="annotation right" style="top: 120px; right: -100px;" onclick="showExplanation('explanation-scanner')">Network Scanner Section</div>
+        <div class="annotation left" style="top: 180px; left: -120px;" onclick="showExplanation('explanation-network-range')">Enter network range (CIDR)</div>
+        <div class="annotation right" style="top: 250px; right: -80px;" onclick="showExplanation('explanation-scan-controls')">Scan Controls</div>
+        <div class="annotation left" style="top: 420px; left: -100px;" onclick="showExplanation('explanation-results-table')">Scan Results Table</div>
+        <div class="annotation right" style="top: 580px; right: -120px;" onclick="showExplanation('explanation-switch-mgmt')">Switch Management Section</div>
+        <div class="annotation left" style="top: 640px; left: -100px;" onclick="showExplanation('explanation-credentials')">Target Switch & Credentials</div>
+        <div class="annotation right" style="top: 720px; right: -100px;" onclick="showExplanation('explanation-operations')">Management Operations</div>
+        <div class="annotation bottom" style="bottom: 120px; right: 100px;" onclick="showExplanation('explanation-console')">Console Output</div>
+        <div class="annotation bottom" style="bottom: -15px; left: 100px;" onclick="showExplanation('explanation-status')">Status Bar</div>
+
+        <h1>🔧 Automatisation Réseau - Scanner & Switch Management</h1>
+
+        <!-- Network Scanner Section -->
+        <div class="section">
+            <div class="section-title">🔍 Scanner Réseau</div>
+            
+            <div class="input-group">
+                <div>
+                    <label for="network-range">Plage réseau à scanner :</label>
+                    <input type="text" id="network-range" value="192.168.116.0/24" />
+                </div>
+                <div style="flex: 0;">
+                    <button>🔍 Scanner Réseau</button>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="secondary">⚡ Scan Rapide</button>
+                <button class="danger">🗑️ Effacer Résultats</button>
+            </div>
+
+            <!-- Sample Results Table -->
+            <table class="hosts-table">
+                <thead>
+                    <tr>
+                        <th>IP</th>
+                        <th>Hostname</th>
+                        <th>Ports Ouverts</th>
+                        <th>Type</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="switch-candidate">
+                        <td>192.168.1.100</td>
+                        <td>switch-lab-01</td>
+                        <td>
+                            <span class="tag ssh">22</span>
+                            <span class="tag web">80</span>
+                            <span class="tag web">443</span>
+                        </td>
+                        <td>Linux Server/Switch</td>
+                        <td><button class="select-btn">Sélectionner</button></td>
+                    </tr>
+                    <tr>
+                        <td>192.168.1.101</td>
+                        <td>192.168.1.101</td>
+                        <td><span class="tag ssh">22</span></td>
+                        <td>SSH Server</td>
+                        <td><button class="select-btn">Sélectionner</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Switch Management Section -->
+        <div class="section">
+            <div class="section-title">⚙️ Gestion Switch</div>
+
+            <div class="input-group">
+                <div>
+                    <label for="selected-switch">Switch Sélectionné :</label>
+                    <input type="text" id="selected-switch" value="192.168.1.100" />
+                </div>
+                <div>
+                    <label for="ssh-password">Mot de passe SSH :</label>
+                    <input type="password" id="ssh-password" value="****" />
+                </div>
+            </div>
+
+            <div class="input-group">
+                <div>
+                    <label for="switch-to-backup">Bridge à sauvegarder :</label>
+                    <input type="text" id="switch-to-backup" value="vSwitchA" />
+                </div>
+                <div>
+                    <label for="backup-files">Fichier de sauvegarde :</label>
+                    <select id="backup-files">
+                        <option value="">-- Sélectionner un fichier --</option>
+                        <option value="vSwitchA_backup_192_168_1_100_20241201_143022.yaml">vSwitchA_backup_192_168_1_100_20241201_143022.yaml</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button>🔌 Tester Connexion</button>
+                <button>📋 Show OVS</button>
+                <button>🌉 Lister Bridges</button>
+                <button>💾 Sauvegarder</button>
+                <button>⬆️ Charger Config</button>
+            </div>
+        </div>
+
+        <!-- Console Output -->
+        <textarea class="console" readonly>> ✅ Network scan completed. Network scanned: 192.168.1.0/24
+> 📊 Hosts detected: 2 | Switch candidates: 1
+> ✅ Switch selected: 192.168.1.100
+> 🔌 Testing connection to 192.168.1.100...
+> ✅ OVS connection successful
+> 💾 Backup completed! File: vSwitchA_backup_192_168_1_100_20241201_143022.yaml
+> 📊 Ports found: 4 | Source: 192.168.1.100</textarea>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div>
+                <span>Statut : Connecté</span>
+            </div>
+            <div>
+                <span>Dernière action : Configuration sauvegardée</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showExplanation(explanationId) {
+            // Hide all explanations
+            document.querySelectorAll('.explanation').forEach(el => {
+                el.style.display = 'none';
+            });
+            
+            // Show selected explanation
+            document.getElementById(explanationId).style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeExplanation() {
+            document.querySelectorAll('.explanation').forEach(el => {
+                el.style.display = 'none';
+            });
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        // Close on overlay click
+        document.getElementById('overlay').addEventListener('click', closeExplanation);
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeExplanation();
+            }
+        });
+    </script>
+</body>
+</html>
