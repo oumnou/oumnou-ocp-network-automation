@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import yaml
 from services.ssh_utils import run_ovs_command, clean_ovs_output
+from services.action_logger import action_logger  # ✅ Import action logger
 
 BACKUP_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'backup')
 
@@ -17,31 +18,39 @@ def register_backup_routes(app):
         target_host = data.get("target_host")  # ✅ Allow specifying target host
 
         if not password:
+            action_logger.log_action("Backup failed - No password provided", "ERROR")
             return jsonify({"success": False, "error": "Password is required."}), 400
         if not switch_name:
+            action_logger.log_action("Backup failed - No switch name provided", "ERROR")
             return jsonify({"success": False, "error": "Switch name is required."}), 400
 
         # ✅ Use current selected switch IP if available
         from flask import g
         hostname = target_host or getattr(g, 'current_switch_ip', None)
 
+        action_logger.log_action(f"Backup started for switch '{switch_name}' on host '{hostname or 'localhost'}'", "SUCCESS")
+
         # 🧠 Step 1: First verify the bridge exists
         bridge_check_cmd = f"ovs-vsctl br-exists {switch_name}"
         _, check_err = run_ovs_command(bridge_check_cmd, hostname=hostname, password=password)
         
         if check_err and "does not exist" in check_err.lower():
+            error_msg = f"Bridge '{switch_name}' does not exist. Available bridges can be seen with 'ovs-vsctl list-br'"
+            action_logger.log_action(f"Backup failed - {error_msg}", "ERROR")
             return jsonify({
                 "success": False, 
-                "error": f"Bridge '{switch_name}' does not exist. Available bridges can be seen with 'ovs-vsctl list-br'"
+                "error": error_msg
             }), 400
 
         # 🧠 Step 2: Get list of ports on the given bridge
         raw_ports, err = run_ovs_command(f"ovs-vsctl list-ports {switch_name}", hostname=hostname, password=password)
         
         if err and ("no bridge named" in err.lower() or "does not exist" in err.lower()):
+            error_msg = f"Bridge '{switch_name}' not found. Error: {err}"
+            action_logger.log_action(f"Backup failed - {error_msg}", "ERROR")
             return jsonify({
                 "success": False, 
-                "error": f"Bridge '{switch_name}' not found. Error: {err}"
+                "error": error_msg
             }), 400
 
         # Clean and validate port output
@@ -58,6 +67,8 @@ def register_backup_routes(app):
             if "ovs-vsctl:" in port.lower() or "error:" in port.lower() or "no bridge" in port.lower():
                 continue  # Skip error messages
             valid_ports.append(port)
+
+        action_logger.log_action(f"Found {len(valid_ports)} valid ports on bridge '{switch_name}'", "SUCCESS")
 
         ports_data = []
         interfaces_data = []
@@ -120,10 +131,20 @@ def register_backup_routes(app):
         try:
             with open(filepath, "w") as f:
                 yaml.dump(yaml_data, f, default_flow_style=False, indent=2)
+            
+            action_logger.log_action(f"Backup completed successfully - File: {filename}", "SUCCESS", {
+                'filename': filename,
+                'ports_found': len(valid_ports),
+                'source_host': hostname or "localhost",
+                'bridge_name': switch_name
+            })
+            
         except Exception as e:
+            error_msg = f"Failed to save backup file: {str(e)}"
+            action_logger.log_action(f"Backup failed - {error_msg}", "ERROR")
             return jsonify({
                 "success": False,
-                "error": f"Failed to save backup file: {str(e)}"
+                "error": error_msg
             }), 500
 
         return jsonify({

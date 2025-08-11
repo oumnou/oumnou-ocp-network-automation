@@ -11,9 +11,45 @@ document.addEventListener('DOMContentLoaded', () => {
   const listBridgesBtn = document.getElementById('btn-list-bridges');
   const loadConfigBtn = document.getElementById('btn-load-config');
 
+  // Function to save action to log file
+  function saveActionToLog(action, success = true) {
+    const timestamp = new Date().toISOString();
+    const status = success ? 'SUCCESS' : 'ERROR';
+    const logEntry = {
+      timestamp: timestamp,
+      action: action,
+      status: status
+    };
+
+    // Send log entry to server
+    fetch('/api/log_action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logEntry)
+    })
+    .catch(err => {
+      console.error('Failed to save action to log:', err);
+      // Fallback: save to localStorage if server logging fails
+      try {
+        const existingLogs = JSON.parse(localStorage.getItem('actionLogs') || '[]');
+        existingLogs.push(logEntry);
+        // Keep only last 1000 entries to prevent storage overflow
+        if (existingLogs.length > 1000) {
+          existingLogs.splice(0, existingLogs.length - 1000);
+        }
+        localStorage.setItem('actionLogs', JSON.stringify(existingLogs));
+      } catch (storageError) {
+        console.error('Failed to save to localStorage:', storageError);
+      }
+    });
+  }
+
   function updateStatus(connection, action) {
     if(statusConnection) statusConnection.textContent = 'Statut : ' + connection;
     if(statusAction) statusAction.textContent = 'Dernière action : ' + action;
+    
+    // Save action to log file
+    saveActionToLog(action, !connection.includes('Erreur'));
   }
 
   function logToConsole(message, success = true) {
@@ -27,6 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statusAction) {
       statusAction.textContent = `Dernière action : ${message}`;
       statusAction.style.color = success ? 'green' : 'red';
+      
+      // Save action to log file
+      saveActionToLog(message, success);
     }
   }
 
@@ -116,8 +155,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Function to download action logs
+  function downloadActionLogs() {
+    fetch('/api/download_logs')
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to download logs');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `action_logs_${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        logToConsole('✅ Logs téléchargés avec succès');
+      })
+      .catch(err => {
+        console.error('Download logs error:', err);
+        logToConsole('❌ Erreur lors du téléchargement des logs', false);
+      });
+  }
+
   // Initialize
   loadBackupFiles();
+
+  // Add download logs button functionality if it exists
+  const downloadLogsBtn = document.getElementById('btn-download-logs');
+  if (downloadLogsBtn) {
+    downloadLogsBtn.addEventListener('click', downloadActionLogs);
+  }
 
   // Quick Scan button
   if (quickScanBtn) {
@@ -302,6 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(consoleOutput) consoleOutput.scrollTop = consoleOutput.scrollHeight;
         updateStatus('Connecté', 'Configuration récupérée');
+        
       })
       .catch(err => {
         if(consoleOutput) {

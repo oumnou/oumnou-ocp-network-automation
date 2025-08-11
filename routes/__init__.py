@@ -5,6 +5,7 @@ from .ovs_backup import register_backup_routes
 from .ovs_load_config import load_config_bp
 from .api_backups import backup_api
 from .network_scan import network_scan_bp  # ✅ Import network scanner
+from .logging_routes import logging_routes_bp  # ✅ Import logging routes
 from flask import send_from_directory
 
 def init_routes(app):
@@ -24,3 +25,4 @@ def init_routes(app):
     app.register_blueprint(backup_api)
     app.register_blueprint(load_config_bp)
     app.register_blueprint(network_scan_bp)  # ✅ Register network scanner routes
+    app.register_blueprint(logging_routes_bp)  # ✅ Register logging routes
